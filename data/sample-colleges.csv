@@ -1,0 +1,4 @@
+name,type,established_year,address,district_id,phone,email,website,academic_year,source_url,verified_at
+"[Sample] Sagarmatha College of Science and Technology",PRIVATE,2011,"Sanepa, Lalitpur",lalitpur,"+977-1-5527274",info@scst.edu.np,https://scst.edu.np,2025/2026,https://scst.edu.np/admission,2026-01-10
+"[Sample] Amrit Science Campus (ASCOL)",GOVERNMENT,1956,"Thamel, Kathmandu",kathmandu,"+977-1-4411637",info@ascol.edu.np,https://ascol.edu.np,2025/2026,https://iost.tu.edu.np,2026-01-08
+"[Sample] Pokhara Engineering and IT College",COMMUNITY,2003,"Phulbari, Pokhara",kaski,"+977-61-528530",admission@pec.edu.np,https://pec.edu.np,2025/2026,https://pu.edu.np,2026-01-12

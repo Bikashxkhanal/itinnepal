@@ -1,0 +1,458 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum CollegeType {
+  GOVERNMENT
+  COMMUNITY
+  PRIVATE
+}
+
+enum CollegeStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProgramLevel {
+  DIPLOMA
+  BACHELOR
+  MASTER
+}
+
+enum FeeItemType {
+  ADMISSION
+  SEMESTER
+  ANNUAL
+  LAB
+  EXAM
+  OTHER
+}
+
+enum SelectionMethod {
+  ENTRANCE
+  MERIT
+  INTERVIEW
+  MIXED
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum HelpRequestStatus {
+  NEW
+  ASSIGNED
+  CONTACTED
+  FOLLOW_UP
+  RESOLVED
+  CLOSED
+}
+
+enum UserRole {
+  VISITOR
+  STUDENT
+  COLLEGE_ADMIN
+  COUNSELLOR
+  CONTENT_EDITOR
+  SUPER_ADMIN
+}
+
+model University {
+  id           String               @id @default(uuid())
+  name         String
+  slug         String               @unique
+  type         String               // e.g. Public, Private, Autonomous
+  website      String?
+  country      String               @default("Nepal")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  affiliations CollegeAffiliation[]
+
+  @@map("universities")
+}
+
+model College {
+  id              String               @id @default(uuid())
+  name            String
+  slug            String               @unique
+  type            CollegeType          @default(PRIVATE)
+  establishedYear Int?                 @map("established_year")
+  description     String?              @db.Text
+  address         String
+  districtId      String               @map("district_id")
+  provinceId      String?              @map("province_id")
+  lat             Float?
+  lng             Float?
+  phone           String?
+  email           String?
+  website         String?
+  logoUrl         String?              @map("logo_url")
+  status          CollegeStatus        @default(DRAFT)
+  verifiedLevel   Int                  @default(0) @map("verified_level") // 0: unverified, 1: basic, 2: platform-verified
+  verifiedAt      DateTime?            @map("verified_at")
+  claimedBy       String?              @map("claimed_by")
+  isSample        Boolean              @default(false) @map("is_sample")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  affiliations    CollegeAffiliation[]
+  programs        CollegeProgram[]
+  scholarships    Scholarship[]
+  alumni          Alumni[]
+  media           Media[]
+  reviews         Review[]
+  notices         Notice[]
+
+  @@index([slug])
+  @@index([districtId])
+  @@index([status])
+  @@map("colleges")
+}
+
+model CollegeAffiliation {
+  id           String     @id @default(uuid())
+  collegeId    String     @map("college_id")
+  universityId String     @map("university_id")
+  college      College    @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  university   University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@unique([collegeId, universityId])
+  @@map("college_affiliations")
+}
+
+model Program {
+  id             String           @id @default(uuid())
+  name           String
+  slug           String           @unique
+  level          ProgramLevel     @default(BACHELOR)
+  durationMonths Int              @default(48) @map("duration_months")
+  summary        String?          @db.Text
+  category       String           // e.g. "Computer Science & IT", "Engineering"
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  colleges       CollegeProgram[]
+  alumni         Alumni[]
+
+  @@index([slug])
+  @@map("programs")
+}
+
+model CollegeProgram {
+  id            String           @id @default(uuid())
+  collegeId     String           @map("college_id")
+  programId     String           @map("program_id")
+  shift         String           @default("Morning") // Morning, Day
+  seats         Int              @default(48)
+  intakePerYear Int              @default(1) @map("intake_per_year")
+  syllabusUrl   String?          @map("syllabus_url")
+  status        String           @default("ACTIVE")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  college       College          @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  program       Program          @relation(fields: [programId], references: [id], onDelete: Cascade)
+  feeItems      FeeItem[]
+  admissionRules AdmissionRule[]
+  cutoffs       Cutoff[]
+  enrollmentStats EnrollmentStat[]
+  alumniOutcomes AlumniOutcome[]
+
+  @@unique([collegeId, programId])
+  @@index([collegeId])
+  @@index([programId])
+  @@map("college_programs")
+}
+
+model FeeItem {
+  id               String         @id @default(uuid())
+  collegeProgramId String         @map("college_program_id")
+  label            String
+  type             FeeItemType    @default(SEMESTER)
+  amountNpr        Float          @map("amount_npr")
+  frequency        String         @default("per_semester") // one_time, per_semester, annual
+  notes            String?
+  // Mandatory statistics verification fields
+  academicYear     String         @map("academic_year")
+  sourceUrl        String         @map("source_url")
+  verifiedAt       DateTime       @map("verified_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  collegeProgram   CollegeProgram @relation(fields: [collegeProgramId], references: [id], onDelete: Cascade)
+
+  @@index([collegeProgramId])
+  @@map("fee_items")
+}
+
+model Scholarship {
+  id          String   @id @default(uuid())
+  collegeId   String   @map("college_id")
+  name        String
+  criteria    String   @db.Text
+  discountPct Float    @default(0) @map("discount_pct")
+  deadline    String?
+  sourceUrl   String   @map("source_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@index([collegeId])
+  @@map("scholarships")
+}
+
+model EntranceExam {
+  id             String          @id @default(uuid())
+  name           String
+  slug           String          @unique
+  body           String          // e.g. TU IOST, IOE, KU, Pokhara University
+  website        String?
+  pattern        String?         @db.Text
+  passMarks      Int?            @map("pass_marks")
+  fullMarks      Int?            @map("full_marks")
+  feeNpr         Float?          @map("fee_npr")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  admissionRules AdmissionRule[]
+
+  @@map("entrance_exams")
+}
+
+model AdmissionRule {
+  id               String          @id @default(uuid())
+  collegeProgramId String          @map("college_program_id")
+  entranceRequired Boolean         @default(true) @map("entrance_required")
+  examId           String?         @map("exam_id")
+  minGpa           Float?          @map("min_gpa")
+  eligibilityText  String?         @db.Text @map("eligibility_text")
+  selectionMethod  SelectionMethod @default(ENTRANCE) @map("selection_method")
+  documentsJson    String?         @db.Text @map("documents_json")
+  applyUrl         String?         @map("apply_url")
+  stepsJson        String?         @db.Text @map("steps_json")
+  // Mandatory statistics verification fields
+  academicYear     String          @map("academic_year")
+  sourceUrl        String          @map("source_url")
+  verifiedAt       DateTime        @map("verified_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  collegeProgram   CollegeProgram  @relation(fields: [collegeProgramId], references: [id], onDelete: Cascade)
+  exam             EntranceExam?   @relation(fields: [examId], references: [id], onDelete: SetNull)
+
+  @@index([collegeProgramId])
+  @@map("admission_rules")
+}
+
+model Cutoff {
+  id               String         @id @default(uuid())
+  collegeProgramId String         @map("college_program_id")
+  round            String         @default("Round 1")
+  cutoffMarks      Float          @map("cutoff_marks")
+  // Mandatory statistics verification fields
+  academicYear     String         @map("academic_year")
+  sourceUrl        String         @map("source_url")
+  verifiedAt       DateTime       @map("verified_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  collegeProgram   CollegeProgram @relation(fields: [collegeProgramId], references: [id], onDelete: Cascade)
+
+  @@index([collegeProgramId])
+  @@map("cutoffs")
+}
+
+model EnrollmentStat {
+  id                  String         @id @default(uuid())
+  collegeProgramId    String         @map("college_program_id")
+  seats               Int
+  enrolled            Int
+  passRate            Float?         @map("pass_rate")
+  studentTeacherRatio String?        @map("student_teacher_ratio")
+  // Mandatory statistics verification fields
+  academicYear        String         @map("academic_year")
+  sourceUrl           String         @map("source_url")
+  verifiedAt          DateTime       @map("verified_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+
+  collegeProgram      CollegeProgram @relation(fields: [collegeProgramId], references: [id], onDelete: Cascade)
+
+  @@index([collegeProgramId])
+  @@map("enrollment_stats")
+}
+
+model Alumni {
+  id          String   @id @default(uuid())
+  collegeId   String   @map("college_id")
+  name        String
+  batchYear   Int      @map("batch_year")
+  programId   String?  @map("program_id")
+  currentRole String   @map("current_role")
+  employer    String
+  linkedinUrl String?  @map("linkedin_url")
+  consent     Boolean  @default(true)
+  testimonial String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  program     Program? @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  @@index([collegeId])
+  @@map("alumni")
+}
+
+model AlumniOutcome {
+  id               String         @id @default(uuid())
+  collegeProgramId String         @map("college_program_id")
+  batchYear        Int            @map("batch_year")
+  placedPct        Float          @map("placed_pct")
+  medianSalaryNpr  Float?         @map("median_salary_npr")
+  topEmployersJson String?        @db.Text @map("top_employers_json")
+  // Mandatory statistics verification fields
+  academicYear     String         @map("academic_year")
+  sourceUrl        String         @map("source_url")
+  verifiedAt       DateTime       @map("verified_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  collegeProgram   CollegeProgram @relation(fields: [collegeProgramId], references: [id], onDelete: Cascade)
+
+  @@index([collegeProgramId])
+  @@map("alumni_outcomes")
+}
+
+model Media {
+  id          String    @id @default(uuid())
+  collegeId   String    @map("college_id")
+  type        MediaType @default(PHOTO)
+  category    String    // campus, labs, library, classrooms, hostel, events
+  url         String
+  altText     String    @map("alt_text")
+  caption     String?
+  uploadedBy  String?   @map("uploaded_by")
+  status      String    @default("APPROVED")
+  licenseInfo String?   @map("license_info")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  college     College   @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@index([collegeId])
+  @@map("media")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String?
+  email     String?   @unique
+  phone     String?   @unique
+  role      UserRole  @default(STUDENT)
+  locale    String    @default("en")
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  savedItems SavedItem[]
+  reviews    Review[]
+
+  @@map("users")
+}
+
+model SavedItem {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  entityType String   @map("entity_type") // college, program
+  entityId   String   @map("entity_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId])
+  @@map("saved_items")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  collegeId  String   @map("college_id")
+  userId     String   @map("user_id")
+  ratingJson String   @db.Text @map("rating_json") // { teaching: 4, labs: 4, placement: 3, value: 4 }
+  body       String   @db.Text
+  status     String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  college    College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([collegeId])
+  @@map("reviews")
+}
+
+model HelpRequest {
+  id           String            @id @default(uuid())
+  refCode      String            @unique @map("ref_code") // ITN-YYYY-NNNNN
+  userId       String?           @map("user_id")
+  name         String
+  phone        String
+  email        String?
+  seeGpa       Float?            @map("see_gpa")
+  plus2Stream  String?           @map("plus2_stream") // Science, Management, Humanities, CTEVT
+  interests    String?           // comma separated or JSON
+  budgetNpr    Float?            @map("budget_npr")
+  districtPref String?           @map("district_pref")
+  question     String?           @db.Text
+  channelPref  String            @default("call") @map("channel_pref") // call, whatsapp, viber
+  contactTime  String            @default("anytime") @map("contact_time") // morning, afternoon, evening
+  consentShare Boolean           @default(false) @map("consent_share")
+  status       HelpRequestStatus @default(NEW)
+  assignedTo   String?           @map("assigned_to")
+  resolvedAt   DateTime?         @map("resolved_at")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  notes        HelpNote[]
+
+  @@index([refCode])
+  @@index([status])
+  @@map("help_requests")
+}
+
+model HelpNote {
+  id            String      @id @default(uuid())
+  helpRequestId String      @map("help_request_id")
+  authorId      String      @map("author_id")
+  note          String      @db.Text
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  helpRequest   HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+
+  @@index([helpRequestId])
+  @@map("help_notes")
+}
+
+model Notice {
+  id          String    @id @default(uuid())
+  collegeId   String?   @map("college_id")
+  title       String
+  body        String    @db.Text
+  publishedAt DateTime  @default(now()) @map("published_at")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  college     College?  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@index([collegeId])
+  @@map("notices")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String   @map("actor_id")
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  diffJson  String?  @db.Text @map("diff_json")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([entity, entityId])
+  @@map("audit_log")
+}

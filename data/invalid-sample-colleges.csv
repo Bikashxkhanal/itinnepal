@@ -1,0 +1,4 @@
+name,type,established_year,address,district_id,phone,email,website,academic_year,source_url,verified_at
+"[Sample] Valid College",PRIVATE,2015,"Baneshwor, Kathmandu",kathmandu,"+977-1-4400000",contact@example.edu.np,https://example.edu.np,2025/2026,https://example.edu.np/fees,2026-01-10
+"[Sample] Rejected Due To Missing Source",PRIVATE,2018,"Jawalakhel, Lalitpur",lalitpur,"+977-1-5500000",contact2@example.edu.np,https://example2.edu.np,2025/2026,,2026-01-10
+"[Sample] Rejected Due To Missing Verified Date",COMMUNITY,2010,"Pokhara",kaski,"+977-61-500000",contact3@example.edu.np,https://example3.edu.np,2025/2026,https://example3.edu.np,
