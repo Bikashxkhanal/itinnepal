@@ -19,6 +19,7 @@ import {
 import { getCollegeBySlug, getAllColleges } from "@/modules/colleges/colleges.service";
 import { Badge } from "@/components/common/Badge";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
+import { AdSlot } from "@/components/common/AdSlot";
 
 export const revalidate = 3600; // ISR 1 hour
 
@@ -576,6 +577,9 @@ export default async function CollegeProfilePage({ params }: PageProps) {
             </div>
           </div>
         </section>
+
+        {/* Ad slot: in_content_2 (Doc 06 Section 4 - kept strictly outside fee table) */}
+        <AdSlot slotId="in_content_2" minHeight={280} />
 
         {/* Similar Colleges Section (Doc 08 Section 3) */}
         {similarColleges.length > 0 && (

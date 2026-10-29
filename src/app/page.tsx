@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Search, CheckCircle2, HelpCircle, FileText, Calendar, ArrowRight } from "lucide-react";
 import { getAllPrograms } from "@/modules/programs/programs.service";
 import { Badge } from "@/components/common/Badge";
+import { AdSlot } from "@/components/common/AdSlot";
 
 export const revalidate = 3600; // ISR 1 hour
 
@@ -283,6 +284,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Ad slot: footer_banner (Doc 06 Section 4) */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <AdSlot slotId="footer_banner" minHeight={100} />
+      </div>
 
       {/* Latest Notices & Admission Alerts */}
       <section className="border-t border-slate-200 bg-slate-50 py-12">

@@ -18,6 +18,7 @@ import {
 } from "@/modules/programs/programs.service";
 import { Badge } from "@/components/common/Badge";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
+import { AdSlot } from "@/components/common/AdSlot";
 
 export const revalidate = 3600;
 
@@ -277,6 +278,9 @@ export default async function ProgramDetailPage({ params }: PageProps) {
               </div>
             </div>
           </section>
+
+          {/* Ad Slot: in_content_2 before FAQs (Doc 06 Section 4) */}
+          <AdSlot slotId="in_content_2" minHeight={280} />
 
           {/* Program FAQs */}
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
